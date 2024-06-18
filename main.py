@@ -2,6 +2,8 @@
 
 import os
 import json
+from threading import Thread
+import time
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +12,8 @@ from fastapi.security.api_key import APIKeyHeader
 import schemas
 from deps import get_token
 from utils import complete_generation, generate_lyrics, generate_music, get_feed, get_lyrics, get_credits
+
+from cookie import suno_auth
 
 API_KEY = os.getenv("API_KEY")
 API_KEY_NAME = "X-API-Key"
@@ -34,7 +38,19 @@ async def get_api_key(api_key_header: str = Depends(api_key_header)):
             status_code=status.HTTP_403_FORBIDDEN, detail="Could not validate credentials"
         )
 
+def refresh_token_periodically():
+    while True:
+        try:
+            suno_auth.refresh_token()
+        except Exception as e:
+            print(f"Error refreshing token: {e}")
+        time.sleep(60 * 60)  # Refresh every hour
 
+@app.on_event("startup")
+def on_startup():
+    # Start the background thread for token refreshing
+    Thread(target=refresh_token_periodically, daemon=True).start()
+    
 @app.get("/")
 async def get_root(api_key: str = Depends(get_api_key)):
     return schemas.Response()
