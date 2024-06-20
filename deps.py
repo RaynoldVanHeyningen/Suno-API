@@ -4,7 +4,8 @@ from cookie import suno_auth
 
 
 def get_token():
+    token = suno_auth.get_token()
     try:
-        yield suno_auth.get_token()
+        yield token
     finally:
         pass
