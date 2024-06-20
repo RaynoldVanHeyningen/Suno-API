@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
 
-import json
 import os
 import time
 from http.cookies import SimpleCookie
@@ -12,12 +11,10 @@ from utils import COMMON_HEADERS
 
 
 class SunoCookie:
-    def __init__(self, token_file="/mnt/token/token.json"):
+    def __init__(self):
         self.cookie = SimpleCookie()
         self.session_id = None
         self.token = None
-        self.token_file = token_file
-        self.load_token_from_file()
 
     def load_cookie(self, cookie_str):
         self.cookie.load(cookie_str)
@@ -36,45 +33,6 @@ class SunoCookie:
 
     def set_token(self, token: str):
         self.token = token
-        self.save_token_to_file()
-
-    def refresh_token(self):
-        headers = {"cookie": self.get_cookie()}
-        headers.update(COMMON_HEADERS)
-        session_id = self.get_session_id()
-
-        url=f"https://clerk.suno.com/v1/client/sessions/{session_id}/tokens?_clerk_js_version=4.72.0-snapshot.vc141245",
-        # headers = {
-        #     "Content-Type": "application/json",
-        #     "Cookie": self.get_cookie(),
-        #     # Add any other headers required for the request
-        # }
-        # data = {
-        #     # Add any data required for the request
-        # }
-        response = requests.post(url, headers=headers)
-        if response.status_code == 200:
-            resp_headers = dict(response.headers)
-            set_cookie = resp_headers.get("Set-Cookie")
-            self.load_cookie(set_cookie)
-            token = response.json().get("jwt")
-
-            self.set_token(token)
-
-            print(set_cookie)
-            print(f"*** token -> {token} ***")
-        else:
-            raise Exception("Failed to refresh token")
-    
-    def save_token_to_file(self):
-        with open(self.token_file, "w") as f:
-            json.dump({"token": self.token}, f)
-    
-    def load_token_from_file(self):
-        if os.path.exists(self.token_file):
-            with open(self.token_file, "r") as f:
-                data = json.load(f)
-                self.token = data.get("token")
 
 
 suno_auth = SunoCookie()
